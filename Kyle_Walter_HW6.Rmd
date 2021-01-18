@@ -1,0 +1,110 @@
+---
+title: "Week 6 Homework"
+author: "Kyle Walter"
+date: "11/1/2020"
+output: word_document
+---
+
+Step	1:	Load	the	data
+We	will	use	the	airquality	data	set,	which you	should	already	have	as	part	of	your	R	
+installation.
+```{r}
+df <- airquality
+```
+
+Step	2:	Clean	the	data
+After	you	load	the	data,	there	will	be	some	NAs	in	the	data.	You	need	to	figure	out	what	to	
+do	about	those	nasty	NAs.
+```{r}
+df <- na.omit(df)
+colSums(is.na(df))
+```
+
+
+Step	3:	Understand	the	data	distribution
+Create	the	following	visualizations using	ggplot:
+• Histograms	for	each	of	the	variables	
+
+```{r}
+library(ggplot2)
+ggplot(df, aes(Ozone))+geom_histogram(color="black", fill="gray")
+ggplot(df, aes(Solar.R))+geom_histogram(color="black", fill="gray")
+ggplot(df, aes(Wind))+geom_histogram(color="black", fill="gray")
+ggplot(df, aes(x=Temp))+geom_histogram(color="black", fill="gray")
+ggplot(df, aes(x=Month))+geom_histogram(color="black", fill="gray")
+ggplot(df, aes(x=Day))+geom_histogram(color="black", fill="gray")
+
+
+```
+
+
+• Boxplot	for	Ozone
+```{r}
+ggplot(df, aes(as.factor(Ozone),Month))+geom_boxplot()
+```
+
+• Boxplot for	wind	values	(round	the	wind	to	get	a	good	number	of	“buckets”)
+```{r}
+ggplot(df, aes(as.factor(Wind),Month))+geom_boxplot()
+```
+
+Step	4:	Explore	how	the	data	changes	over	time
+First,	make	sure	to	create	appropriate	dates	(this	data	was	from	1973).	Then	create	line	
+charts for	ozone,	temp,	wind	and	solar.R (one	line	chart	for	each,	and	then	one	chart	with	4	
+lines,	each	having	a	different	color).	Create	these	visualizations	using	ggplot.
+Note	that	for	the	chart	with	4	lines,	you	need	to	think	about	how	to	effectively	use	the	yaxis.
+
+```{r}
+df$Date <- paste(1973, df$Month, df$Day, sep = "-")
+df$Date <- as.Date(df$Date, tryFormats=c("%Y-%m-%d", "%Y/%m/%d"))
+Variables <- c(df$Ozone,df$Temp, df$Wind,df$Solar.R)
+Variables_Name <- rep(c("Ozone","Temp",
+                      "Wind","Solar.R"),each = 111)
+Days <- rep(df$Date,4)
+df2 <- data.frame(Variables,Variables_Name, Days)
+ggplot(df, aes(x=Date, y=Ozone))+geom_line()+geom_point()
+ggplot(df, aes(x=Date, y=Solar.R))+geom_line()+geom_point()
+ggplot(df, aes(x=Date, y=Temp))+geom_line()+geom_point()
+ggplot(df, aes(x=Date, y=Wind))+geom_line()+geom_point()
+g <- ggplot(df2, aes(x=Days, y=Variables, Group=Variables_Name, color=Variables_Name))+geom_line()+geom_point()
+g
+```
+
+
+Step	5:	Look	at	all	the data	via	a	Heatmap
+Create a	heatmap,	with	each	day	along	the	x-axis	and	ozone,	temp,	wind	and	solar.r	along	
+the	y-axis,	and	days	as	rows	along	the	y-axis.	 Great	the	heatmap	using	geom_tile (this	
+defines	the	ggplot geometry	to	be	‘tiles’	as	opposed	to	‘lines’	and	the	other	geometry	we	
+have	previously	used).
+Note	that	you	need	to	figure	out	how	to	show	the	relative	change	equally	across	all	the	
+variables.
+
+```{r}
+ggplot(df2, aes(x=as.factor(Days), y=as.factor(Variables_Name), fill = Variables))+geom_tile()+xlab("Date(in1973)")+ylab("Variables")+labs(fill="Value")
+```
+
+
+Step	6:	Look	at	all	the	data	via	a	scatter	chart
+Create	a	scatter	chart (using	ggplot	geom_point),	with	the	x-axis	representing	the	wind,	the	
+y-axis	representing	the	temperature,	the	size	of	each	dot	representing	the	ozone	and	the	
+color	representing	the	solar.R
+
+```{r}
+ggplot(df, aes(x=Wind, y=Temp, color = Solar.R, size = Ozone))+geom_point()
+```
+
+
+Step	7:	Final	Analysis
+• Do	you	see	any	patterns	after	exploring	the	data?		
+
+Solar Radiation and Ozone definitely seem to have a correlation. When one of the two variable is high so is the other. And this is easily seeon the line graph and reinforced on the scatter plot. Warmer temperatues also have a correlation to slower wind speed. There also seems to be relation between warmer temperatures and and Higher lvels of Ozone and Solar Radiation. Though looking at the lin chart Solar R leads Ozone which leads tempture.
+
+• Which image was the most helpful
+ I think for the data set the line graph and scatter plot working together tell a larger story. There we items I noticed on the line graph, but upon revisiting after seeing the scatter plot, I found more useful information.
+
+
+
+
+
+
+

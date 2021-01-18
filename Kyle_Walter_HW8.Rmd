@@ -1,0 +1,157 @@
+---
+title: "Homework 8"
+author: "Kyle Walter"
+date: "11/22/2020"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+IST687	– Making	Predictions
+The	textbook’s	chapter	on	linear	models (“Line	Up,	Please”)	introduces	linear	predictive	
+modeling	using	the	workhorse	tool	known	as	multiple	regression.	The	term	“multiple	
+regression”	has	an	odd	history,	dating	back	to	an	early	scientific	observation	of	a	
+phenomenon	called	“regression	to	the	mean.”	These	days,	multiple	regression	is	just	an	
+interesting	name	for	using	a	simple	linear	modeling	technique	to	measuring	the	connection	
+between	one	or	more	predictor	variables	and	an	outcome	variable In	this	exercise,	we	are	
+going	to	use	an	open	data	set	to	explore	antelope	population.
+This	is	the	first	exercise	of	the	semester	where	there	is	no	sample	R	code	to	help	you	along.	
+Because	you	have	had	so	much	practice	with	R	by	now,	you	can	create	and/or	find	all	of	the	
+code	you	need	to	accomplish	these	steps:
+1. Read	in	data	from	the	following	URL:	
+http://college.cengage.com/mathematics/brase/understandable_statistics/7e/students/datasets/mlr/excel/mlr01.xls
+This	URL	will	enable	you	to	download	the	dataset	into	excel.	
+The	more	general	web	site	can	be	found	at:
+http://college.cengage.com/mathematics/brase/understandable_statistics/7e/students/datasets/mlr/frames/frame.html
+If	you	view	this	in	a	spreadsheet,	you	will	find	that	four	columns	of	a	small	dataset.	
+The	first	column	shows	the	number	of	fawn	in	a	given	spring	(fawn	are	baby	
+Antelope).	The	second	column	shows	the	population	of	adult	antelope,	the	third	
+shows	the	annual	precipitation	that	year,	and	finally,	the	last	column	shows	how	bad	
+the	winter	was	during	that	year.
+
+```{r}
+library(readxl)
+library(httr)
+
+ULRtoRead <- "https://college.cengage.com/mathematics/brase/understandable_statistics/7e/students/datasets/mlr/excel/mlr01.xls" #Captures the URL where the file is stored
+GET(ULRtoRead, write_disk(data <- tempfile(fileext = ".xls"))) #Grabs the data from the website and stores it on the temporary drive --Credit-Stcack Overflow user LukeA for the design
+Antelope <- read_xls(data) # Reads the data into the data frame from the temp file
+colnames(Antelope) <- c("fawnPopulation","adultPopulation", "annualPercipitation","winterSeverity") #renames the columns to as described in the list above
+print(Antelope) #shows the small data set to see that it meets spects described in the prompt -- it does
+```
+
+
+2. You	have	the	option	of	saving	the	file	save	this	file	to	your	computer	and	read	it	into	
+R,	or reading the	data	directly	from	the	web	into	a	data	frame.
+
+Read file Directly to data frame above - see 1
+
+3. You	should	inspect	the	data	using	the	str()	command	to	make	sure	that	all	of	the	
+cases	have	been	read	in	(n=8	years	of observations)	and	that	there	are	four
+variables.	
+
+```{r}
+str(Antelope) #checks the data for the correct number over variables and size of the data frame - all good
+```
+
+4. Create	bivariate	plots	of	number	of	baby	fawns versus	adult	antelope	population,	
+the	precipitation	that	year,	and	the	severity	of	the	winter.	Your	code	should	produce	
+three	separate	plots.	Make	sure	the	Y-axis	and	X-axis	are	labeled.	Keeping	in	mind	
+that	the	number	of	fawns is	the	outcome	(or	dependent)	variable,	which	axis	should	
+it	go	on	in	your	plots?
+
+```{r}
+library(ggplot2)
+#Graphs teh number of fawnsborn vs the Adult Population
+AnteScatter <- ggplot(Antelope)+geom_point(aes(x=adultPopulation, y=fawnPopulation))+geom_smooth(method = lm, aes(x=adultPopulation, y=fawnPopulation), color="red")
+#graphs the number of fawns to the amount of percipitation in the priot year.
+rainScatter <- ggplot(Antelope)+geom_point(aes(x=annualPercipitation, y=fawnPopulation))+geom_smooth(method = lm, aes(x=annualPercipitation, y=fawnPopulation), color = "blue")
+#graphs the #of Fawnsborn to the severity of the winter
+winterScatter <- ggplot(Antelope)+geom_point(aes(x=winterSeverity, y=fawnPopulation))+geom_smooth(method = lm, aes(x=winterSeverity, y=fawnPopulation), color="green")
+
+#the Three commands below call the graphs so they can be seen.
+AnteScatter
+rainScatter
+winterScatter
+```
+
+
+5. Next,	create	three	regression	models	of	increasing	complexity	using	lm().	In	the	first	
+model,	predict	the	number	of	fawns	from	the	severity	of	the	winter.	In	the	second	
+model,	predict	the	number	of	fawns from	two	variables	(one	should	be	the	severity	
+of	the	winter).	In	the	third	model	predict	the	number	of	fawns from	the	three	other	
+variables.	Which	model	works	best?	
+
+```{r}
+model1 <- lm(fawnPopulation~winterSeverity, Antelope) # Creats linear regression predicting number of fawns born vs winter severity
+summary(model1) # prints the results of Model1
+model2 <- lm(fawnPopulation~winterSeverity+adultPopulation, Antelope) # Creats linear regresion predicting number of fawns born vs winter and adult population
+summary(model2) #Prints the results of Model2
+model3 <- lm(fawnPopulation~., Antelope) # creates linear model predicting fawns born vs all three dependent variables in the script
+summary(model3) #prints results of Model3
+```
+
+Which	of	the	predictors	are	statistically	
+significant	in	each	model? 
+
+In the first model above, the prediction can only predict about 54% of the fawnsPopulation based on the severity of the winter. The Winter severity falls below the .05 P value meaning it is significant variable in the equation
+
+In the 2nd model, I added in the adult population along with the winter severity, and 84% (Adjusted R Sqared value) of the fawn population can be predicted with this model THe Ault Population is a significant factor in the prediction with a p values less than .05 however; in this mix the severity of the winter has an increated p value above the .05 threshold and is no longer significant.
+
+In the last model, the adjust R squared can predict 95.5% of the fawn population and all three factors are below the p value of .05 so they show as signficant. This model works the best of the three at predicting the number of fawnsborn.
+
+If	you	wanted	to	create	the	most	parsimonious	model	(i.e.,	
+the	one	that	did	the	best	job	with	the	fewest	predictors),	what	would	it	contain?
+
+```{r}
+summary(lm(fawnPopulation~adultPopulation, Antelope)) #Displays a linear model predicting fawns born vs the number of adults in the population.
+```
+
+I would utilize the equation to above as parsimonious model because I only need 1 variable the adult population of and can predict 88% of the time the fawn population. Both th Adult Population and Model have an overal p value less than .05 so it meets statistical significance.
+
+
+Learning	Goals	for	this	activity:
+A. Develop	skills	for	manipulating	and	transforming	data	that	contains	missing	values.
+B. Understand	the	application	of	multiple	linear	regression	to	simple	situations	of	
+predicting	one	numeric	variable	from	one	or	more	other	numeric	variables.	
+C. Practice	plotting	skills.
+D. Build	debugging	skills.
+E. Increase	familiarity	with	bringing	external	data	sets	into	R.
+F. Increase	familiarity	with	sources	of	advice	and	ideas	on	R	source	code.
+Essential	Guide	for	All	IST687	Activities	(appears	at	the	end	of	all	activity	guides)
+1. All	IST687	activities	work	on	what	some	people	call	a	“constructivist	learning”	
+model.	By	developing	a	product	on	your	own,	testing	it	to	find	flaws,	improving	it,	
+and	comparing	your	solution	to	the	solutions	of	other	people,	you	can	obtain	a	
+deeper	understanding	of	a	problem,	the	tools	that	might	solve	that	problem,	and	a	
+range	of	solutions	that	those	tools	may	facilitate.	The	constructivist	model	only	
+works	to	the	extent	that	the	student/learner	has	the	drive	to	explore	a	problem,	be	
+frustrated,	fail,	try	again,	possibly	fail	again,	and	finally	push	through	to	a	
+satisfactory	level	of	understanding.
+2. Each	IST687	activity	builds	on	skills	and	knowledge	developed	in	the	previous	
+activities,	so	your	success	across	the	span	of	the	course	depends	at	each	stage	on	
+your	investment	in	earlier	stages.	Take	the	time	to	experiment,	play, try	new	things,	
+practice,	improve,	and	learn	as	much	as	possible.	These	investments	will	pay	off	
+later.
+3. Using	the	expertise	of	others,	the	Internet,	and	other	sources	of	information	is	not	
+only	acceptable	- it	is	expected.	You	must	always,	always,	always give	credit	to	
+your	sources.	For	example,	if	you	find	a	chunk	of	code	from	r-bloggers.com	that	
+helps	you	with	developing	a	solution,	by	all	means	borrow	that	chunk	of	code,	but	
+make	sure	to	use	a	comment	in	your	code	to	document	the	source	of	the	borrowed	
+code	chunk.	The	discussion	boards	in	the	learning	management	system	have	been	
+setup	to	encourage	appropriate	sharing	of	knowledge	and	wisdom	among	peers.	
+Feel	free	to	ask	a	question	or	pose	a	solution	on	these	boards.
+4. Building	on	the	previous	point,	when	submitting	code	as	your	solution	to	the	
+activity,	the	comments	matter	at	least	as	much,	if	not	more	than	the	code	itself.	A	
+good	rule	of	thumb	is	that	every	line	of	code	should	have	a	comment,	and	every	
+meaningful	block	of	code	should	be	preceded	by	a	comment	block	that	is	just	about	
+as	long	as	the	code	itself.	As	noted	above,	you	can	use	comments	to	give	proper	
+credit	to	your	sources	and	you	can	use	comments	to	identify	your	submission	as	
+your	own.		
+5. Here’s	a	bonus	area	of	constructivist	learning	that	has	not	appeared	in	previous	
+exercises	for	this	class:	Sometimes	the	building	process	reveals	unexpected	results	
+that	are	themselves	very	informative	in	learning.	When	you	completed	the	exercise	
+above,	what	did	you	find	that	was	unexpected?	What	did	you	do	about	trying	to	
+understand	what	had	happened?	Did	you	do	further	exploration?	What	did	that	
+further	exploration	reveal?
+
+So I think that looking at winter severity on a graph was such that I would have dropped it as variable, it did not seem to play a signficant impact on the graph, but seeing that it did show signficance when run through the linear model was surprising. I guess if the mothers aren't making it through the winter the precived value will be less fawns born in the spring.

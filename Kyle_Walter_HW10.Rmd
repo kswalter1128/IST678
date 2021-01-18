@@ -1,0 +1,100 @@
+---
+title: "Homework10"
+author: "Kyle Walter"
+date: "12/5/2020"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r packages}
+require(tm)
+require(wordcloud)
+require(tidytext)
+require(pdftools)
+require(tidyverse)
+```
+
+1. First	read	in	the	AFINN	word	list.	Note	that	each	line	is	both	a	word	and	a	score	
+(between	-5	and	5).	You	will	need	to	split	the	line	and	create	two	vectors	(one	for	
+words	and	one	for	scores).
+
+```{r AFINN List}
+Afinn <- get_sentiments("afinn")
+```
+
+2. Compute	the	overall	score	for	the	MLK	speech	using	the	AFINN	word	list	(as	
+opposed	to	the	positive	and	negative	word	lists).
+
+```{r}
+URL <- "https://www.btboces.org/Downloads/I%20Have%20a%20Dream%20by%20Martin%20Luther%20King%20Jr.pdf" #URL where the speech is stored
+MLK <- pdf_text(url(URL)) #read in the speech to R
+MLK <- VectorSource(MLK) #reads each element as a document
+corpus <- Corpus(MLK) #creates the bag of words
+corpus <- tm_map(corpus, content_transformer(tolower)) #sets all words to lower case
+corpus <- tm_map(corpus, removePunctuation) #removes punctuation from the spreech
+corpus <- tm_map(corpus, removeNumbers) #removes numeric characters from the text
+corpus <- tm_map(corpus, removeWords, stopwords("english")) #removes English stup words like the, a, an
+wordMatrix <- TermDocumentMatrix(corpus) #creates a term document matrix
+wordMatrix <- as.matrix(wordMatrix) #transforms term matrix to a data matrix in R
+wordMatrix <- apply(wordMatrix, 1, sum) #combines 3 pages to word counts on consolidated
+wordMatrix <- sort(wordMatrix, decreasing = T) #orders words from most occuring to least occuring
+wordMatrix <- data.frame(wordMatrix)#Transforms the Matrix to DataFrome
+wordMatrix$Words <-rownames(wordMatrix) #Reads in the Words from RowNames as a column in the Data Frame
+wordMatrix<- left_join(wordMatrix, Afinn, by = c("Words"="word")) #Brings over Affinitiy Score from Afinn
+wordMatrix$value <- imputeTS::na_replace(wordMatrix$value, 0) #Sets words without an A finscore to Zero
+wordMatrix$score <- wordMatrix$wordMatrix * wordMatrix$value #Mutliples occurence of the word by Afine value
+TotalScore <- sum(wordMatrix$score)/sum(wordMatrix$wordMatrix) #calulates the overall score for the piece
+TotalScore #returns the total value
+```
+
+3. Then,	just	as	in	class,	compute	the	sentiment	score	for	each	quarter	(25%)	of	the	
+speech	to	see	how	this	sentiment	analysis	is	the	same	or	different	than	what	was	
+computing	with	just	the	positive	and	negative	word	files.
+Note	that	since	you	will	be	doing	almost	the	exact	same	thing	4	times	(once	for	each	
+quarter	of	the	speech),	you	should	create	a	function	to	do	most	of	the	work,	and	call	
+it	4	times.
+
+```{r}
+mlk <- readLines("http://www.coreybjackson.com/687/Datasets/MLKspeech.txt")
+mlk <- VectorSource(mlk) #element as document
+mlk <- Corpus(mlk)#Creates Bag of words
+CP <- round(length(mlk)*1/4) #finds 1/4th of total lines
+Group1 <- mlk[1:CP] # 1/4th of lines
+Group2 <- mlk[(CP+1):(CP*2)] #2/4th of lines
+Group3 <- mlk[((CP*2)+1):(CP*3)] # 3/4 lines sections
+Group4 <- mlk[((CP*3)+1):round(length(mlk))] # last 4th of lines
+
+TranWords <- function(q) {
+  q <- tm_map(q, content_transformer(tolower)) #sets all words to lower case
+  q <- tm_map(q, removePunctuation) #removes punctuation from the spreech
+  q <- tm_map(q, removeNumbers) #removes numeric characters from the text
+  q <- tm_map(q, removeWords, stopwords("english")) #removes English stup words like the, a, an
+  q <- TermDocumentMatrix(q) #creates a term document matrix
+  q <- as.matrix(q) #transforms term matrix to a data matrix in R
+  q <- apply(q, 1, sum) #combines 3 pages to word counts on consolidated
+  q <- sort(q, decreasing = T) #orders words from most occuring to least occuring
+  q <- data.frame(q)#Transforms the Matrix to DataFrome
+  q$Words <-rownames(q) #Reads in the Words from RowNames as a column in the Data Frame
+  q<- left_join(q, Afinn, by = c("Words"="word")) #Brings over Affinitiy Score from Afinn
+  q$value <- imputeTS::na_replace(q$value, 0) #Sets words without an A finscore to Zero
+  q$score <- q$q * q$value #Mutliples occurence of the word by Afine value
+  return(q)# Returns q
+}
+Group1<- TranWords(Group1) #transform Group 1
+Group2 <- TranWords(Group2)#transform Group 2
+Group3 <- TranWords(Group3)#transform Group 3
+Group4 <- TranWords(Group4)#transform Group 4
+Consolidation <- list(Group1, Group2, Group3, Group4) #brings the groups together in a list
+names(Consolidation) <- c("Group1","Group2","Group3","Group4") #names each of the lists
+Consolidation <- data.table::rbindlist(Consolidation, idcol = TRUE) #Converts the list to a data frame
+Consolidation <- Consolidation[, .(WordCount = sum(q), TotalScore = sum(score)), by = .id] # aggregates totals by groups in the data frame
+Consolidation$Sentiment <-(Consolidation$TotalScore/Consolidation$WordCount) #calculates and stores sentiment score per group in data frame column
+```
+
+4. Finally,	plot	the	results	(i.e,	4	numbers)	via	a	bar	chart.
+```{r}
+g <- ggplot(Consolidation, mapping = aes(x=.id, y=Sentiment))+geom_bar(stat = "identity", fill = "blue")+xlab("Group#") #Creates a chart showing Sentiment Score by group
+g #displays chart
+```
+

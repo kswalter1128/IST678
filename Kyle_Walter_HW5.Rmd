@@ -1,0 +1,73 @@
+---
+title: "Week 5 Homework"
+author: "Kyle Walter"
+date: "10/29/2020"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+IST687	– JSON	&	tapply Homework:	Accident	Analysis
+Step	1:	Load	the	data
+Read	in	the	following	JSON	dataset
+http://data.maryland.gov/api/views/pdvh-tf2u/rows.json?accessType=DOWNLOAD
+
+```{r}
+library(RCurl)
+library(jsonlite)
+urltoRead <- "http://opendata.maryland.gov/api/views/pdvh-tf2u/rows.json?accessType=DOWNLOAD"
+apiUrl <- getURL(urltoRead)
+jData <- fromJSON(apiUrl)
+mlanddf <- data.frame(jData[[2]])
+```
+
+
+Step	2:	Clean	the	data
+After	you	load	the	data,	remove	the	first	8	columns,	and	then,	to	make	it	easier	to	work	
+with,	name	the	rest	of	the	columns	as	follows:
+Note,	not	surprisingly, it	is	in	JSON	format.		You	should	be	able	to	see	that	the	first	result	is	
+the	metadata	(information	about	the	data)	and	the	second	is	the	actual	data.
+namesOfColumns <-
+c("CASE_NUMBER","BARRACK","ACC_DATE","ACC_TIME","ACC_TIME_CODE","DAY_OF_WE
+EK","ROAD","INTERSECT_ROAD","DIST_FROM_INTERSECT","DIST_DIRECTION","CITY_NA
+ME","COUNTY_CODE","COUNTY_NAME","VEHICLE_COUNT","PROP_DEST","INJURY","COLLI
+SION_WITH_1","COLLISION_WITH_2")
+
+```{r}
+mlanddf <- mlanddf[,-1:-8]
+namesOfColumns <-
+c("CASE_NUMBER","BARRACK","ACC_DATE","ACC_TIME","ACC_TIME_CODE","DAY_OF_WEEK",
+"ROAD","INTERSECT_ROAD","DIST_FROM_INTERSECT","DIST_DIRECTION","CITY_NAME",
+"COUNTY_CODE","COUNTY_NAME","VEHICLE_COUNT","PROP_DEST","INJURY","COLLI
+SION_WITH_1","COLLISION_WITH_2")
+colnames(mlanddf) <- namesOfColumns
+```
+
+
+Step	3:	Understand	the	data	using	SQL	(via	SQLDF)
+Answer	the	following	questions:
+• How	many	accidents	happen	on	SUNDAY		
+• How	many	accidents	had	injuries (might	need	to	remove	NAs	from	the	data)
+• List	the	injuries	by	day
+
+```{r}
+library(sqldf)
+sqldf("select count(DAY_OF_WEEK) as 'Accidents on Sundays' from mlanddf where TRIM(DAY_OF_WEEK) = 'SUNDAY'")
+sqldf("select count(INJURY) as 'Accidents with injuries' from mlanddf where TRIM(INJURY) = 'YES'")
+sqldf("select DAY_OF_WEEK, COUNT(INJURY) from mlanddf where INJURY = 'YES' GROUP BY DAY_OF_WEEK")
+
+```
+
+
+Step	4:	Understand	the	data	using	tapply
+Answer	the	following	questions	(same	as	before)	– compare	results:
+• How	many	accidents	happen	on	Sunday
+• How	many	accidents	had	injuries (might	need	to	remove	NAs	from	the	data)
+• List	the	injuries	by	day
+
+```{r}
+tapply(mlanddf$CASE_NUMBER, mlanddf$DAY_OF_WEEK, length)
+tapply(mlanddf$CASE_NUMBER, mlanddf$INJURY, length)
+tapply(mlanddf$CASE_NUMBER, list(mlanddf$DAY_OF_WEEK, mlanddf$INJURY), length)
+```
+

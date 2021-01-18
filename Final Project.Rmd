@@ -1,0 +1,131 @@
+---
+title: "Final_Project"
+author: "Marriah Lewis and Lili Knutson"
+date: "12/2/2020"
+output:word document 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(tidyverse)
+f<-file.choose()
+chessdf<-read.csv(f)
+chessdf$created_at<-NULL
+chessdf$last_move_at<-NULL
+chessdf$increment_code<-NULL
+chessdf$moves<-NULL
+chessdf$opening_eco<-NULL
+chessdf$opening_name<-NULL
+```
+
+
+```{r}
+chessdf %>% distinct(id, .keep_all = TRUE)
+CleanChessDF<-chessdf%>% distinct(id, .keep_all = TRUE)
+#Really just to check to make sure that it was cleaned correctly
+duplicated(CleanChessDF$id)
+summary(duplicated(CleanChessDF$id))
+#Should say true if there is no duplicates
+length(unique(CleanChessDF$id)) == nrow(CleanChessDF) 
+```
+
+```{r}
+#Check out the distribution of white wins, draw and black wins.White has a half-move advantage, before each black move, white is ahead one move. 
+length(which(CleanChessDF$winner=="white"))/length(CleanChessDF$winner)*100#49.9%
+length(which(CleanChessDF$winner== "draw"))/length(CleanChessDF$winner)*100#4.6%
+length(which(CleanChessDF$winner== "black"))/length(CleanChessDF$winner)*100#45.4%
+```
+
+```{r}
+#Convert a character into a factor
+CleanChessDF$winner<-as.factor(CleanChessDF$winner)
+#Set random seed to make results reproducible 
+set.seed(1234)
+#Calculate the size of each of the data sets
+data_set_size<- floor(nrow(CleanChessDF)/3)
+#Generate a random sample of data_set_size indexes 
+indexes<- sample(1:nrow(CleanChessDF), size=data_set_size)
+#Assign the data to the correct sets 
+training<-CleanChessDF[-indexes,]
+validation<-CleanChessDF[indexes,]
+#Models using randomForest
+library(randomForest)
+#Perform training 
+rf_classifier= randomForest(winner~., data=training, ntree=500, mtry=1, importance=TRUE )
+#importance of our classifier; MeanDecreaseAccuracy rough estimate of the loss in prediction performance when that particular variable is omitted from the training set. Assessing the GINI is a measure of node impurity. Looks like we have classifier that was properly trained and is producing somewhat good predictions. 
+varImpPlot(rf_classifier)
+#Validation set assessment: looking at confusion matrix
+prediction_table<-predict(rf_classifier, validation)
+table(observed=validation[,1], predicted=prediction_table)
+#ROC curves and AUC 
+library(ROCR)
+prediction_ROC_curve<-predict(rf_classifier, validation, type="prob")
+#color
+pred_color<-c("#F8766D","#00BA38","#619CFF")
+classes<-levels(validation$winner)
+#For each class
+for (i in 1:3)
+{
+  # Define which observations belong to class[i]
+  true_values <- ifelse(validation==classes[i],1,0)
+  # Assess the performance of classifier for class[i]
+  pred <- prediction(prediction_ROC_curve[,i],true_values)
+  perf <- performance(pred, "tpr", "fpr")
+  if (i==1)
+  {
+    plot(perf,main="ROC Curve",col=pred_color[i]) 
+  }
+  else
+  {
+    plot(perf,main="ROC Curve",col=pred_color[i],add=TRUE) 
+  }
+  # Calculate the AUC and print it to screen
+  auc.perf <- performance(pred, measure = "auc")
+  print(auc.perf@y.values)
+}
+#-ROC Curve-AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has a AUC of 0.0; predictions are 100% correction has an AUC of 1.0. Our range is in 0.7 which means that there is a 70% chance that model can be predicted.  
+#Using one variable-14% OOB estimate of error rate 
+randomForest(winner~turns, data=CleanChessDF) 
+#Using three variables-33% OOB estimate of errror rate 
+randomForest(winner~turns+white_rating+black_rating, data = CleanChessDF) 
+#Using black_rating and turns-30% OOB estimate of error rate 
+randomForest(winner~turns + black_rating, data = CleanChessDF)
+#Using white_rating and turns-28% OOB estimate of error rate 
+randomForest(winner~turns + white_rating, data = CleanChessDF)
+
+```
+
+
+
+```{r}
+#Questionable ggplot
+ggplot(CleanChessDF, aes(black_rating, white_rating, color=factor(winner)))+geom_jitter()+geom_abline(colour="grey50", size=2)
+```
+
+Does another model give us similar results?
+```{r}
+require(kernlab)
+require(scales)
+svm_classifier <- ksvm(winner~turns+white_rating+black_rating, training, C =5)
+svm_classifier
+svm_pred <- predict(svm_classifier, validation)
+Comparison <- data.frame(validation$winner, svm_pred)
+Comparison <- table(Comparison)
+Comparison # Comparison Matrix showing correct guesses vs incorrect
+percent((Comparison[1,1]+Comparison[2,2]+Comparison[3+3])/dim(validation)[1])#Accuracy
+```
+Given the outcome the model clearly wasn't good, would have expected closer to 65% accuracy.
+
+Likely why the scores don't work in the model. The base data set does not contain and date and time field. As players are scored after turnaments the various scores for the players are likely confusing the model. Here are some examples wwhere players show multiple scores in the dataset.
+```{r}
+require(data.table)
+CleanChessDF <- data.table(CleanChessDF)
+WhitePlayerScores <- CleanChessDF[, .(Count = .N, Scores = unique(white_rating)), by =CleanChessDF$white_id]
+WhitePlayerScores[WhitePlayerScores$Count!=1]
+BlackPlayerScores <- CleanChessDF[, .(Count = .N, Scores = unique(black_rating)), by =CleanChessDF$black_id]
+BlackPlayerScores[BlackPlayerScores$Count!=1]
+```
+
+

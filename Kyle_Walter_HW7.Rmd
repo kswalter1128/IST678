@@ -1,0 +1,169 @@
+---
+title: "Week 7 Homework"
+author: "Kyle Walter"
+date: "11/15/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+IST687	– Viz	Map HW:	Median	Income
+Download	the	dataset	from	the	LMS that	has	median	income	by	zip	code	(an	excel	file).
+Step	1: Load	the	Data
+1) Read	the	data	– using	the	gdata	package	we	have	previously	used.			
+
+```{r}
+require(gdata)
+require(readxl)
+zipData <- read_xlsx("J:/IST687 - Into to Data Science/Week 7/MedianZIP_2_2.xlsx")
+colnames(zipData) <- c("zip","median","mean","population")
+```
+
+2) Clean	up	the	dataframe
+a. Remove	any	info	at	the	front	of	the	file	that’s	not	needed
+b. Update	the	column	names	(zip,	median,	mean,	population)
+```{r}
+zipData <- zipData[-1,]
+tail(zipData) #looks like this good data
+zipData$median <- gsub(",","",zipData$median)
+zipData$mean <- gsub(",","", zipData$mean)
+zipData$population <- gsub(",","",zipData$population)
+zipData$mean <- ifelse(zipData$mean==".",0,zipData$mean)
+zipData$median <- as.numeric(zipData$median)
+zipData$mean <- as.numeric(zipData$mean)
+zipData$population <- as.numeric(zipData$population)
+zipData$zip <- as.character(sprintf("%05d",as.numeric(zipData$zip)))
+```
+
+
+3) Load	the	‘zipcode’	package
+
+```{r}
+ZipPackage <- "http://cran.r-project.org/src/contrib/Archive/zipcode/zipcode_1.0.tar.gz"
+install.packages(ZipPackage, repos = NULL, type = "source")
+require(zipcode)
+data(zipcode)
+```
+
+
+4) Merge	the	zip	code	information	from	the	two	data	frames	(merge	into	one	
+dataframe)
+
+```{r}
+require(dplyr)
+Combine.df <- inner_join(zipData, zipcode, by = c("zip"="zip"))
+```
+
+
+5) Remove	Hawaii	and	Alaska	(just	focus	on	the	‘lower 48’	states)
+
+```{r}
+Combine.df <- Combine.df[which(Combine.df$state!="HI"&Combine.df$state!="AK"),]
+```
+
+
+Step	2: Show	the	income	&	population	per	state
+1) Create	a	simpler	dataframe,	with	just	the	average	median	income	and	the	the	
+population	for	each	state.
+
+```{r}
+Income <- tapply(Combine.df$median, Combine.df$state, mean)
+states <- rownames(Income)
+StateIncome <- data.frame(states, Income)
+population <- tapply(Combine.df$population, Combine.df$state, sum)
+state <- rownames(population)
+StatePop <- data.frame(state, population)
+Simple.DF <- inner_join(StateIncome, StatePop, by = c("states"="state"))
+```
+
+
+2) Add	the	state	abbreviations	and	the	state	names	as	new	columns	(make	sure	the	
+state	names	are	all	lower	case)
+```{r}
+states <- data.frame(state.abb, state.name)
+Simple.DF <- inner_join(Simple.DF, states, by = c("states"="state.abb"))
+Simple.DF$stateName <- tolower(Simple.DF$state.name)
+```
+
+3) Show	the	U.S.	map,	representing	the	color	with	the	average	median	income	of	that	
+state
+
+```{r}
+require(ggplot2)
+require(mapproj)
+Simple.DF <- Simple.DF[order(Simple.DF$Income),]
+us <- map_data("state")
+income.map <- ggplot(data = Simple.DF, aes(map_id = stateName))
+income.map <- income.map+geom_map(map = us, aes(fill = Income), color="black")
+income.map  <- income.map+expand_limits(x = us$long, y = us$lat)+coord_map()+ggtitle("Average income by State")
+income.map
+```
+
+
+4) Create	a	second	map	with	color	representing	the	population	of	the	state
+```{r}
+pop.map <- ggplot(Simple.DF, aes(map_id = stateName))
+pop.map <- pop.map + geom_map(map=us, aes(fill = population), color="black")
+pop.map <- pop.map + expand_limits(x=us$long, y=us$lat)+coord_map()+ggtitle("Population by State")
+pop.map
+```
+
+Step	3:	Show	the	income	per	zip	code
+1) Have	draw	each	zip	code	on	the	map,	 where	the	color	of	the	‘dot’	is	based	on	the	
+median	income.	To	make	the	map	look	appealing,	have	the	background	of	the	map	
+be	black.
+
+```{r}
+Combine.df <- left_join(Combine.df, states, by = c("state"="state.abb"))
+Combine.df$state.name <- tolower(Combine.df$state.name)
+zip.income <- ggplot(Combine.df, aes(map_id = state.name))
+zip.income <- zip.income+geom_map(map = us, color="black")+geom_point(Combine.df, mapping = aes(x=longitude, y=latitude, color = median))
+zip.income <- zip.income + expand_limits(x=us$long, y = us$lat)
+zip.income <- zip.income+coord_map()+ggtitle("Income by Zip")
+zip.income
+```
+
+
+Step	4:	Show	Zip	Code	Density
+1) Now	generate	a	different	map,	one	where	we	can	easily	see	where	there	are	lots	of	
+zip	codes,	and	where	there	are	few	(using	the	‘stat_density2d’	function).
+
+```{r}
+zip.density <- ggplot(Combine.df, aes(x=longitude, y=latitude))
+zip.density <- zip.density+geom_point(color="red", alpha = .6)+stat_density2d()
+zip.density <- zip.density+expand_limits(x=us$long, y=us$lat)+coord_map()
+zip.density
+```
+
+
+Step	5:	Zoom	in	to	the	region	around	NYC
+1) Repeat	steps	3	&	4,	but	have	the	image	/	map	be	of	the	northeast	U.S.	(centered	
+around	New	York).
+
+
+```{r}
+library(tmaptools)
+Home <- geocode_OSM("New York, NY")
+Home <- data.frame(Home[[2]])
+zoomAmount <- 4
+ylim <- c(Home[2,]-zoomAmount, Home[2,]+zoomAmount)
+xlim <- c(Home[1,]-zoomAmount-1, Home[1,]+zoomAmount+1)
+NEZips <- Combine.df
+NEZips <- NEZips[NEZips$longitude>xlim[1],]
+NEZips <- NEZips[NEZips$longitude<xlim[2],]
+NEZips <- NEZips[NEZips$latitude>ylim[1],]
+NEZips <- NEZips[NEZips$latitude<ylim[2],]
+CapofWorld <- ggplot(NEZips, aes(map_id = state.name))
+CapofWorld <- CapofWorld+geom_map(map=us, color = "white")+geom_point(NEZips, mapping = aes(x=longitude, y=latitude, fill = median, color = median))
+CapofWorld <- CapofWorld+expand_limits(x=xlim, y=ylim)+coord_map()+ggtitle("Median North Easter Income by Zip")
+DensofWorld <- ggplot(NEZips, aes(x=longitude, y=latitude))+geom_point(color="red", alpha = .6)+stat_density2d()
+DensofWorld <- DensofWorld+expand_limits(x=xlim, y=ylim)+coord_map()+ggtitle("North East US Zip Code Density")
+CapofWorld
+DensofWorld
+```
+
+
+
+
+
+

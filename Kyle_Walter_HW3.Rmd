@@ -1,0 +1,118 @@
+---
+title: "Homework 3 - Cleaning/munging Dataframes"
+author: "Kyle Walter"
+date: "10/17/2020"
+output:pdf_document: default
+output:
+  word_document: default
+  pdf_document: default
+---
+Step	1:	Create	a	function	(named	readStates)	to	read	a	CSV	file	into	R
+1. Note	that	you	are	to	read	a	URL,	not	a	file	local	to	your	computer.
+2. The	file	is	a	dataset	on	state	populations	(within	the	United	States)
+
+```{r}
+readStates <- read.csv(url("http://www2.census.gov/programs-surveys/popest/tables/2010-2011/state/totals/nst-est2011-01.csv"))
+```
+
+Step	2:	Clean	the	dataframe
+3. Note	the	issues	that	need	to	be	fixed	(removing	columns,	removing	rows,	changing
+column	names).
+```{r}
+str(readStates)
+```
+
+
+Need to remove the last 7 rows and first 8 rows from the data frame. Also need to remove columns X.4 through X.8 as they do not currently hold any values
+
+Additionally need remove the . from the state name and convert column x through x.3 to numeric values from their character value.
+
+4. Within	your	function,	make	sure	there	are	51	rows	(one	per	state	+	the	district	of
+Columbia).	Make	sure	there	are	only	5	columns	with	the	columns	having	the
+following	names	(stateName,	 base2010,	base2011,Jul2010, Jul2011).
+5. Make	sure	the	last	four	columns	are	numbers	(i.e.	not	strings).
+
+```{r}
+readStates <- readStates[c(-1:-8,-60:-66),-6:-10]
+```
+
+```{r}
+FreeNmbr <- function(inputvector){
+  inputvector <- gsub(",","",inputvector)
+  inputvector <- gsub(" ","",inputvector)
+  return(as.numeric(inputvector))
+}
+```
+
+
+```{r}
+colnames(readStates) <- c("stateName", "base2010", "base2011", "Jul2010", "Jul2011")
+```
+```{r}
+readStates$stateName <- gsub("\\.","",readStates$stateName)
+readStates$base2010 <- FreeNmbr(readStates$base2010)
+readStates$base2011 <- FreeNmbr(readStates$base2011)
+readStates$Jul2010 <- FreeNmbr(readStates$Jul2010)
+readStates$Jul2011 <- FreeNmbr(readStates$Jul2011)
+```
+
+Step	3:	Store	and	Explore	the	dataset
+6. Store		the dataset	into	a	dataframe,	called	dfStates.
+```{r}
+dfStates <- readStates
+```
+
+
+7. Test	your	dataframe	by	calculating	the	mean	for	the	July2011	data,	by	doing:
+mean(dfStates$Jul2011)
+		 à you	should	get	an	answer	of		6,109,645
+```{r}
+mean(dfStates$Jul2011)
+```
+Step	4:	 Find	the	state	with	the	Highest	Population	
+8. Based	on	the	July2011	data,	what	is	the	population	of	the	state	with	the	highest population?	What	is	the	name	of	that	state?
+
+```{r}
+dfStates[which.max(dfStates$Jul2011),1]
+```
+
+9. Sort	the	data,	in	increasing	order,	based	on	the	July2011	data.	
+
+```{r}
+dfStates <- dfStates[order(dfStates$Jul2011),]
+```
+
+Step	5:	 Explore	the	distribution	of	the	states
+
+10. Write	a	function	that	takes	two	parameters.	The	first	is	a	vector	and	the	second	is	a	
+number.
+11. The	function	will	return	the	percentage	of	the	elements	within	the	vector	that	is	less	
+than	the	same	(i.e.	the	cumulative	distribution	below	the	value	provided).
+
+12. For	example,	if	the	vector	had	5	elements	(1,2,3,4,5),	with	2	being	the	number	
+passed	into	the	function,	the	function	would	return	0.2	(since	20%	of	the	numbers	
+were	below	2).
+
+
+
+```{r}
+library(scales)
+cum.dist <- function(MyVector,MyNumber){
+  p.below <- percent(length(which(MyVector<MyNumber))/length(MyVector))
+  return(p.below)
+}
+```
+
+Run a test to see if the functions work
+
+```{r}
+b <- c(1,2,3,4,5)
+cum.dist(b,2)
+```
+
+13. Test	the	function	with	the	vector	‘dfStates$Jul2011Num’,	and	the	mean	of	
+dfStates$Jul2011Num’.
+
+```{r}
+cum.dist(dfStates$Jul2011,mean(dfStates$Jul2011))
+```

@@ -1,0 +1,139 @@
+---
+title: "Chapter 12 Pictures vs Numbers"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+```{r}
+Numberize <- function(inputVector){
+  inputVector <- gsub(",","",inputVector)
+  inputVector <- gsub(" ","",inputVector)
+  return(as.numeric(inputVector))
+}
+```
+
+#Takes string and removes commas and spaces, convets to number
+
+
+#pull US2010 Census Data into a DataFrame
+
+```{r}
+readCensus <- function(){
+testMunge <- read.csv(url("https://www2.census.gov/programs-surveys/popest/tables/2010-2011/state/totals/nst-est2011-01.csv"))
+testMunge <- testMunge[-1:-8,1:5]
+testMunge <- testMunge[-52:-58,]
+colnames(testMunge) <- c("stateName","april10census","april10base","july10pop","july11pop")
+testMunge$stateName <- gsub("\\.","",testMunge$stateName)
+testMunge$april10census <- Numberize(testMunge$april10census)
+testMunge$april10base <- Numberize(testMunge$april10base)
+testMunge$july10pop <- Numberize(testMunge$july10pop)
+testMunge$july11pop <- Numberize(testMunge$july11pop)
+rownames(testMunge) <- NULL
+return(testMunge)}
+```
+
+Call the state data into R
+```{r}
+dfStates <- readCensus()
+```
+
+Create a historgram from Chapter 9
+```{r}
+hist(dfStates$july11pop)
+```
+
+Using base R graphics, we can also show a bar plot (a bar chart) with more detail
+```{r}
+barplot(dfStates$july11pop, names.arg = dfStates$stateName, las=2)
+```
+
+Create a function to check if a package is installed
+```{r}
+EnsurePackage <- function(x){
+  x <- as.character(x)
+  
+  if (!require(x,character.only = TRUE)){
+    install.packages(x, repos = "http://cran.r-project.org") 
+    require(x,character.only = TRUE)}
+}
+```
+
+Checking to see if ggplot2 is installed
+```{r}
+EnsurePackage("ggplot2")
+```
+
+Bulding a histogram in ggplot2
+
+```{r}
+g <- ggplot(dfStates, aes(x=july11pop))
+g <- g + geom_histogram(binwidth = 5000000, color = "black", fill="white")
+g <- g + ggtitle("states population histogram")
+g
+```
+
+Creating a boxplot
+```{r}
+ggplot(dfStates, aes(x=july11pop,factor(0)))+ 
+geom_boxplot()
+```
+
+graph population change
+```{r}
+dfStates$popChange <- dfStates$july11pop - dfStates$july10pop
+dfStates$increasePop <- ifelse(dfStates$popChange > 0, "positive", "negative")
+g <- ggplot(dfStates, aes(x=factor(increasePop), july11pop))
+g <- g + geom_boxplot() + coord_flip()
+g <- g + ggtitle ("Population grouped by positive or negative change")
+g
+```
+
+Create a line Chart
+```{r}
+G <- ggplot(dfStates, aes(x=reorder(stateName, july11pop), y = july11pop, group=1))+geom_line()+theme(axis.text = element_text(angle = 90, hjust = 1))
+G
+```
+
+Create a bar chart in ggplot
+```{r}
+G <- ggplot(dfStates, aes(x=reorder(stateName, july11pop), y = july11pop, group=1))+geom_col()+theme(axis.text = element_text(angle = 90, hjust = 1))
+G
+```
+
+Population Percentage Change
+```{r}
+dfStates$percentChange <- dfStates$popChange/dfStates$july10pop*100
+g <- ggplot(dfStates, aes(x=reorder(stateName, july11pop),y=july11pop,fill=percentChange))+geom_col()+theme(axis.text = element_text(angle = 90, hjust =1))
+g
+```
+
+Create a scatter plot of the population change
+```{r}
+g <- ggplot(dfStates, aes(x=popChange, y=percentChange))+geom_point(aes(size=july11pop, color=july11pop))
+g
+```
+
+Add text to show name ot the states
+```{r}
+g+geom_text(aes(label=stateName), size=4)
+```
+
+Adjust positions of the text
+```{r}
+g+geom_text(aes(label=stateName), size=4, hjust=1, vjust=-1)
+```
+
+```{r}
+minPerChange <- 1
+minPopChange <- 100000
+dfStates$keystate <- dfStates$popChange > minPopChange & dfStates$percentChange > minPerChange
+minLabel <- format(min(dfStates$july11pop), big.mark=",", trim=TRUE)
+maxLabel <- format(max(dfStates$july11pop), big.mark=",", trim=TRUE)
+medianLabel <- format(median(dfStates$july11pop, big.mark=",", trim=TRUE))
+g <- ggplot(dfStates, aes(x=popChange, y=percentChange))+geom_point(aes(size=july11pop, color=july11pop, shape=keystate))
+g <- g+geom_text(data=dfStates[dfStates$popChange>minPopChange & dfStates$percentChange>minPerChange,],aes(label=stateName, hjust=1, vjust=-1))
+g+scale_color_continuous(name="Pop", breaks = with(dfStates, c(min(july11pop), median(july11pop), max(july11pop))), labels=c(minLabel,medianLabel, maxLabel), low="white",high="black")
+
+```
+

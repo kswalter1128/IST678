@@ -1,0 +1,149 @@
+---
+title: "Week 4 Homework"
+author: "Kyle Walter"
+date: "10/29/2020"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+IST687	– Samples	HW
+Let’s	continue	our	exploration	of	sampling.
+Step	1:	Write	a	summarizing	function	to	understand	the	distribution	of	a	vector
+1. The	function,	call	it	‘printVecInfo’ should	take	a	vector	as	input
+2. The	function	should	print	the	following	information:
+a. Mean
+b. Median
+c. Min	&	max
+d. Standard	deviation
+e. Quantiles	(at	0.05	and	0.95)
+f. Skewness
+
+```{r}
+library(moments)
+printVectorInfo <- function(myVector) {
+  meanVector <- mean(myVector)
+  medianVector <- median(myVector)
+  minVector <- min(myVector)
+  maxVector <- max(myVector)
+  sdVector <- sd(myVector)
+  qVector <- quantile(myVector, probs = c(.05, .95))
+  skewnessVector <- skewness(myVector)
+  cat('Mean: ',meanVector,'\n')
+  cat('Median: ',medianVector, '\n')
+  cat('Min: ',minVector,' ')
+  cat('Max: ',maxVector,'\n')
+  cat('Std: ',sdVector,'\n')
+  cat('Quantile (.05 -- .95): ',qVector,'\n')
+  cat('Skewness: ',skewnessVector,'\n\n')
+}
+```
+
+Note	for	skewness,	you	can	use	the	function	in	the	‘moments’	library.00
+3. Test	the	function	with	a	vector	that	has	(1,2,3,4,5,6,7,8,9,10,50).	You	should	see	
+something	such	as:
+[1]	"mean:	9.54545454545454"
+[1]	"median:	6"
+[1]	"min:	1		max:	50"
+[1]	"sd:	13.7212509368762"
+[1]	"quantile	(0.05	- 0.95):	1.5	-- 30"
+[1]	"skewness:	2.62039633563579"
+```{r}
+testVector <- c(1,2,3,4,5,6,7,8,9,10,50)
+printVectorInfo(testVector)
+```
+
+
+Step	2:	Creating	Samples	in	a	Jar
+4. Create	a	variable	‘jar’	that	has	50	red	and	50	blue	marbles
+(hint:	the	jar	can	have	strings	as	objects,	with	some	of	the	strings	being	‘red’	and	
+some	of	the	strings	being	‘blue’
+
+```{r}
+jar <- rep(c("red","blue"),50)
+```
+
+
+5. Confirm	there	are	50	reds	by	summing	the	samples	that	are	red
+
+```{r}
+sum(jar=="red")
+```
+
+
+6. Sample	10	‘marbles’	(really	strings)	from	the	jar.	How	many	are	red?	What	was	the	
+percentage	of	red	marbles?
+
+```{r}
+library(scales)
+MarSample <- sample(jar, 10, replace = TRUE)
+percent(sum(MarSample=="red")/10)
+```
+
+
+7. Do	the	sampling	20	times,	using	the	‘replicate’	command.	This	should	generate	a	list	
+of	20	numbers.	Each	number	is	the	mean	of	how	many	reds	there	were	in	10	
+samples.	Use	your	printVecInfo to	see	information	of	the	samples.	Also	generate	a	
+histogram	of	the	samples.
+
+```{r}
+MarRepSample <- replicate(20, length(which((sample(jar,10, replace = TRUE ))=="red")))
+mean(MarRepSample)
+printVectorInfo(MarRepSample)
+hist(MarRepSample)
+```
+
+
+8. Repeat	#7,	but	this	time,	sample	the	jar	100	times.	You	should	get	20 numbers,	this	
+time	each	number	represents	the	mean	of	how	many	reds	there	were	in	the	100
+samples.	Use	your	printVecInfo	to	see	information	of	the	samples.	Also	generate	a	
+histogram	of	the	samples.
+
+```{r}
+MarRepSample2<- replicate(20, length(which((sample(jar,100, replace = TRUE))=="red")))
+mean(MarRepSample2)
+printVectorInfo(MarRepSample2)
+hist(MarRepSample2)
+```
+
+9. Repeat	#8,	but	this	time,	replicate	the	sampling	100 times.	You	should	get	100	
+numbers,	this	time	each	number	represents	the	mean	of	how	many	reds	there	were	
+in	the	100	samples.	Use	your	printVecInfo	to	see	information	of	the	samples.	Also	
+generate	a	histogram	of	the	samples.
+
+```{r}
+MarRepSample3<- replicate(100, length(which((sample(jar,100, replace = TRUE))=="red")))
+mean(MarRepSample3)
+printVectorInfo(MarRepSample3)
+hist(MarRepSample3)
+```
+
+
+Step	3:	Explore	the	airquality	dataset
+10. Store	the	‘airquality’	dataset	into	a	temporary	variable
+
+```{r}
+AirQ <- airquality
+```
+
+
+11. Clean	the	dataset	(i.e.	remove	the	NAs)
+```{r}
+summary(AirQ)
+AirQ <- AirQ[rowSums(is.na(AirQ))<=0,]
+summary(AirQ)
+```
+
+
+12. Explore	Ozone,	Wind	and	Temp	by	doing	a	‘printVecInfo’	on	each	as	well	as	
+generating	a	histogram	for	each
+
+```{r}
+printVectorInfo(AirQ$Ozone)
+printVectorInfo(AirQ$Wind)
+printVectorInfo(AirQ$Temp)
+hist(AirQ$Ozone)
+hist(AirQ$Wind)
+hist(AirQ$Temp)
+```
+

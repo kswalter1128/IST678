@@ -1,0 +1,57 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+mtc <- mtcars
+```
+
+Start with base R
+```{r}
+hist(mtc$mpg, breaks = 4)
+```
+
+Using ggplot2
+```{r}
+ggplot(mtc, aes(x=mpg))+geom_histogram(binwidth =2, color = "black", fill="gray")+ggtitle("mpg buckets")
+```
+Travel Time to New York City from Syracuse
+```{r}
+day <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday")
+week1 <- rep(1, 6)
+week2 <- rep(2,6)
+timetoNYC <- c(4,4.5,3.5,5,4,4.2)
+timetoNYC2 <- c(4.5,5,3.8,5.2,4.6,4.3)
+time <- c(timetoNYC,timetoNYC2)
+week <- as.factor(c(week1, week2))
+dayOfWeek <- c(day, day)
+dftoNYC <- data.frame(day, timetoNYC, timetoNYC2)
+dftoNYC
+```
+
+```{r}
+n <- ggplot(dftoNYC,aes(x=day, y=timetoNYC, group=1))+geom_line(color = "red", linetype = "dashed", size=1.5)+geom_point(color="blue", size = 4)
+n
+```
+
+```{r}
+df<-data.frame(dayOfWeek,time,week)
+ggplot(df, aes(x=dayOfWeek, y=time, group=week, color=week))+geom_line()+ylab("Time to NYC (in hours)")+ggtitle("Comparing weekly travel times")
+```
+
+```{r}
+ggplot(mtc, aes(group=cyl, x=cyl, mpg))+geom_boxplot()+coord_flip()
+```
+
+```{r}
+ggplot(mtc, aes(x=cyl))+geom_bar()
+car.names <- rownames(mtc)
+ggplot(mtc, aes(x=car.names, y=mtc$wt))+geom_bar(stat="identity")+theme(axis.text.x = element_text(angle = 45, hjust=1))+ylab("Weight of Car in Tons")+ggtitle("my car weight chart")+xlab("Car Name")
+```
+
+```{r}
+ggplot(mtc, aes(x=mpg, y=reorder(car.names, mpg)))+geom_point(size=3)
+```
+

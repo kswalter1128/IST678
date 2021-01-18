@@ -1,0 +1,91 @@
+---
+title: "Homework 1"
+author: "Kyle Walter"
+date: "10/6/2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+IST687	– Intro Homework
+Define	the	following	vectors,	which	represent	the	weight	and	height	of	people	on	a	
+particular	team	(in	inches	and	pounds):
+```{r}
+
+			height	<- c(59,60,61,58,67,72,70)
+			weight	<- c(150,140,180,220,160,140,130)
+```
+
+Define	a	variable:
+
+```{r}
+a	<- 150
+```
+
+Now	that	you	have	some	data	– explore	
+Step	1:	Calculating	means
+1) Compute,	using	R,	the	average	height	(called	mean	in	R)
+```{r}
+mean(height)
+```
+
+2) Compute,	using	R,	the	average	weight	(called	mean	in	R)
+```{r}
+mean(weight)
+```
+
+3) Calculate	the	length	of	the	vector	‘height’	and	‘weight’
+```{r}
+length(c(height,weight))
+```
+
+4) Calculate	the	sum	of	the	heights
+```{r}
+sum(height)
+```
+
+5) Compute	the	average of	both	height	and	weight,	by	dividing	the	sum (of	the	height	
+or	the	width,	as	appropriate),	by	the	length	of	the	vector.	How	does	this	compare	to	
+the	‘mean’	function?
+```{r}
+sum(height)/length(height)
+sum(weight)/length(weight)
+```
+This produces the same value, however; there is more code to write rather that being able to quickly execute the code
+
+Step	2:	Using	max/min	functions
+6) Compute	the	max	height,	store	the	result	in	‘maxH’
+```{r}
+maxH<-max(height)
+```
+
+7) Compute	the	min	weight,	store	the	results	in	‘minW’
+```{r}
+minW<-min(weight)
+```
+
+Step	3:	Vector	Math
+8) Create	a	new	vector,	which	is	the	weight	+	5	(every	person	gained	5	pounds)
+```{r}
+Covid5<-weight+5
+```
+
+9) Compute	the	weight/height	for	each	person,	using	the	new	weight	just created
+```{r}
+Covid5/height
+```
+
+Step	4:	Using	Conditional	if	statements
+Hint:	In	R,	one	can	do:
+if		(	100	<	150	)	"100	is	less	than	150"	else	"100	is	greater	than	150"
+10)Write	the	R	code	to	test	if	max	height is	greater	than	60	(output	“yes”	or	“no”)
+```{r}
+if (maxH>60)"yes" else "no"
+```
+
+11)Write	the	R	code	to	if	min	weight is	greater	than	the	variable	‘a’	(output	“yes”	or	
+“no”)
+```{r}
+if(minW>a) "yes" else "no"
+```
+

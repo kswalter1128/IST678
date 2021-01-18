@@ -1,0 +1,101 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+require(pacman)
+require(ggplot2)
+dummyDF <- data.frame(state.name, stringsAsFactors = FALSE)
+dummyDF$state <- tolower(dummyDF$state.name)
+p_load(maps, mapproj)
+us <-map_data("state")
+map.simple <- ggplot(dummyDF, aes(map_id= state))
+map.simple <- map.simple+geom_map(map = us, fill="white", color="black")
+map.simple <- map.simple+expand_limits(x=us$long, y=us$lat)+coord_map()+ggtitle("basic map of USA")
+map.simple
+```
+```{r}
+map.simple <- map.simple+geom_point(aes(x=-100, y=30))
+map.simple+geom_point(aes(x=-100, y=30))
+```
+
+Read in state Census data
+```{r}
+#Takes string and removes commas and spaces, convets to number
+Numberize <- function(inputVector){
+  inputVector <- gsub(",","",inputVector)
+  inputVector <- gsub(" ","",inputVector)
+  return(as.numeric(inputVector))
+}
+
+#pull US2010 Census Data into a DataFrame
+readCensus <- function(){
+testMunge <- read.csv(url("https://www2.census.gov/programs-surveys/popest/tables/2010-2011/state/totals/nst-est2011-01.csv"))
+testMunge <- testMunge[-1:-8,1:5]
+testMunge <- testMunge[-52:-58,]
+colnames(testMunge) <- c("stateName","april10census","april10base","july10pop","july11pop")
+testMunge$stateName <- gsub("\\.","",testMunge$stateName)
+testMunge$april10census <- Numberize(testMunge$april10census)
+testMunge$april10base <- Numberize(testMunge$april10base)
+testMunge$july10pop <- Numberize(testMunge$july10pop)
+testMunge$july11pop <- Numberize(testMunge$july11pop)
+rownames(testMunge) <- NULL
+return(testMunge)}
+
+USstatePops <- readCensus()
+USstatePops$stateName <- tolower(USstatePops$stateName)
+```
+
+
+
+```{r}
+map.popColor <- ggplot(USstatePops, aes(map_id = stateName))
+map.popColor <- map.popColor +geom_map(map=us, aes(fill = july11pop))
+map.popColor <- map.popColor + expand_limits(x = us$long, y= us$lat)
+map.popColor <- map.popColor + coord_map()+ggtitle("state population")
+map.popColor
+```
+
+Load in the tmaptootls package
+```{r}
+p_load(tmaptools)
+latlon <- tmaptools::geocode_OSM("Syracuse university, syracuse, ny")
+map.popColor <- map.popColor+ geom_point(aes(x = latlon$coords[1], y = latlon$coords[2]),color = "darkred", size = 3) 
+map.popColor
+```
+
+Now let's zoom into the map where the point is
+
+```{r}
+g <-  map.popColor + xlim(-85, -70)+ylim(35,45) + coord_map()
+g
+```
+
+Class test, put a point in Miami Florida
+```{r}
+miami <- geocode_OSM("Miami, Florida")
+map.popColor <- map.popColor + geom_point(aes(x = miami$coords[1], y = miami$coords[2]), color = "orange", size = 3)
+map.popColor
+```
+
+Map cities and their ratings onto a map
+```{r}
+cities <- c("Manhattan, NY", "Boston, MA","Philadelphia, PA", "Tampa, FL", "Chicago, IL", "Boise, ID", " San Francisco, CA", "Seattle, WA", "Houston, TX")
+bus <- c(10,7,6,5,7,3,10,7,5)
+weather <- c(5,3,6,7,3,6,10,7,2)
+living <- c(7,6,6,7,5,4,6,8,2)
+city.df <- data.frame(cities, bus, weather, living)
+city_loc <- geocode_OSM(cities)
+city.df$lat <- city_loc$lat
+city.df$lon <- city_loc$lon
+city.df$state <- "?"
+```
+
+Map the cities
+```{r}
+map.simple+geom_point(data = city.df, aes(x = city.df$lon, y = city.df$lat))
+```
+
+
+
